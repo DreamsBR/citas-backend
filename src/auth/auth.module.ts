@@ -15,10 +15,10 @@ import { Admin } from '../admin/entities/admin.entity';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET') || 'default-secret-key',
         signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRATION') || '24h',
+          expiresIn: (configService.get<string>('JWT_EXPIRATION') || '24h') as string | number,
         },
       }),
     }),
