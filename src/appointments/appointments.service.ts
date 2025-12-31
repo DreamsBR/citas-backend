@@ -90,7 +90,13 @@ export class AppointmentsService {
     });
 
     // Filtrar slots ocupados
-    const occupiedSlots = existingAppointments.map((apt) => apt.appointmentTime);
+    // IMPORTANTE: appointmentTime viene de DB como "09:00:00" (con segundos)
+    // pero allSlots se genera como "09:00" (sin segundos)
+    // Por eso necesitamos truncar los segundos para que coincidan
+    const occupiedSlots = existingAppointments.map((apt) =>
+      apt.appointmentTime.substring(0, 5), // "09:00:00" -> "09:00"
+    );
+
     const availableSlots = allSlots.filter(
       (slot) => !occupiedSlots.includes(slot),
     );
