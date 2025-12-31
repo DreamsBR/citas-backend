@@ -11,6 +11,7 @@ import { Specialist } from '../specialists/entities/specialist.entity';
 import { Availability } from '../specialists/entities/availability.entity';
 import { Specialty } from '../specialties/entities/specialty.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { ConfirmAppointmentDto } from './dto/confirm-appointment.dto';
 import { EmailsService } from '../emails/emails.service';
 
@@ -253,6 +254,139 @@ export class AppointmentsService {
     }
 
     return appointment;
+  }
+
+  /**
+   * Actualizar cita (admin)
+   */
+  async updateAppointment(
+    id: string,
+    updateDto: UpdateAppointmentDto,
+  ): Promise<Appointment> {
+    const appointment = await this.findOne(id);
+
+    // No permitir editar citas completadas o canceladas
+    if (
+      appointment.status === AppointmentStatus.COMPLETED ||
+      appointment.status === AppointmentStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        'No se pueden editar citas completadas o canceladas',
+      );
+    }
+
+    const {
+      specialtyId,
+      specialistId,
+      appointmentDate,
+      appointmentTime,
+      patientName,
+      patientEmail,
+      patientPhone,
+      notes,
+      status,
+    } = updateDto;
+
+    // Si se cambia especialidad, validar y actualizar precio
+    if (specialtyId && specialtyId !== appointment.specialtyId) {
+      const specialty = await this.specialtyRepository.findOne({
+        where: { id: specialtyId },
+      });
+
+      if (!specialty) {
+        throw new NotFoundException('Especialidad no encontrada');
+      }
+
+      appointment.specialtyId = specialtyId;
+      appointment.price = specialty.basePrice;
+    }
+
+    // Si se cambia especialista, validar
+    if (specialistId && specialistId !== appointment.specialistId) {
+      const targetSpecialtyId = specialtyId || appointment.specialtyId;
+      const specialist = await this.specialistRepository.findOne({
+        where: { id: specialistId, specialtyId: targetSpecialtyId },
+      });
+
+      if (!specialist) {
+        throw new NotFoundException(
+          'Especialista no encontrado o no pertenece a esta especialidad',
+        );
+      }
+
+      appointment.specialistId = specialistId;
+    }
+
+    // Si se cambia fecha u hora, validar disponibilidad
+    const newDate = appointmentDate || appointment.appointmentDate;
+    const newTime = appointmentTime || appointment.appointmentTime;
+    const targetSpecialistId = specialistId || appointment.specialistId;
+
+    // Solo validar si cambió fecha u hora o especialista
+    if (
+      appointmentDate ||
+      appointmentTime ||
+      (specialistId && specialistId !== appointment.specialistId)
+    ) {
+      // Parsear fecha
+      const dateStr =
+        typeof newDate === 'string' ? newDate.split('T')[0] : newDate.toISOString().split('T')[0];
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+
+      // Validar rango de hora
+      if (appointmentTime) {
+        const hour = parseInt(appointmentTime.split(':')[0]);
+        if (hour < 8 || hour > 21) {
+          throw new BadRequestException(
+            'Horario fuera del rango permitido (8am-9pm)',
+          );
+        }
+      }
+
+      // Verificar slots disponibles
+      const availableSlots = await this.getAvailableSlots(
+        targetSpecialistId,
+        date,
+      );
+
+      // Si el slot cambió, verificar que esté disponible
+      const currentTimeSlot = appointment.appointmentTime.substring(0, 5);
+      const newTimeSlot = newTime.substring(0, 5);
+
+      if (
+        !availableSlots.includes(newTimeSlot) &&
+        !(
+          appointment.specialistId === targetSpecialistId &&
+          currentTimeSlot === newTimeSlot &&
+          !appointmentDate
+        )
+      ) {
+        throw new ConflictException('Horario no disponible');
+      }
+
+      if (appointmentDate) {
+        appointment.appointmentDate = date;
+      }
+      if (appointmentTime) {
+        appointment.appointmentTime = appointmentTime;
+      }
+    }
+
+    // Actualizar campos restantes
+    if (patientName) appointment.patientName = patientName;
+    if (patientEmail) appointment.patientEmail = patientEmail;
+    if (patientPhone) appointment.patientPhone = patientPhone;
+    if (notes !== undefined) appointment.notes = notes;
+    if (status) appointment.status = status;
+
+    await this.appointmentRepository.save(appointment);
+
+    // Encolar email de notificación de cambio
+    const updatedAppointment = await this.findOne(id);
+    await this.emailsService.queueAppointmentEdited(updatedAppointment);
+
+    return updatedAppointment;
   }
 
   /**

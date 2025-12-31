@@ -43,6 +43,14 @@ export class Specialist {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
+  @ApiProperty({ example: '/uploads/specialists/photo.jpg', description: 'URL de la foto del especialista', required: false })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  photoUrl: string;
+
+  @ApiProperty({ example: 2500.00, description: 'Salario mensual del especialista', required: false })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  monthlySalary: number;
+
   @ApiProperty({ type: () => Specialty, description: 'Especialidad del fisioterapeuta' })
   @Column({ type: 'uuid' })
   specialtyId: string;

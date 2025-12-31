@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsEmail, IsOptional, IsBoolean, IsUUID } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsBoolean, IsUUID, IsNumber, Min } from 'class-validator';
 
 export class CreateSpecialistDto {
   @ApiProperty({ example: 'María', description: 'Nombre del especialista' })
@@ -31,6 +31,12 @@ export class CreateSpecialistDto {
   @ApiProperty({ example: 'uuid', description: 'ID de la especialidad' })
   @IsUUID()
   specialtyId: string;
+
+  @ApiProperty({ example: 2500.00, description: 'Salario mensual', required: false })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  monthlySalary?: number;
 
   @ApiProperty({ example: true, description: 'Si está activo', default: true })
   @IsBoolean()

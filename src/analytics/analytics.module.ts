@@ -3,10 +3,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AnalyticsService } from './analytics.service';
 import { AnalyticsController } from './analytics.controller';
 import { Appointment } from '../appointments/entities/appointment.entity';
+import { Specialist } from '../specialists/entities/specialist.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Appointment]), AuthModule],
+  imports: [TypeOrmModule.forFeature([Appointment, Specialist]), AuthModule],
   controllers: [AnalyticsController],
   providers: [AnalyticsService],
 })

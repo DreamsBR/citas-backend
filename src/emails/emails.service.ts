@@ -103,6 +103,53 @@ export class EmailsService {
   }
 
   /**
+   * Encolar email de notificación de cambios en cita
+   */
+  async queueAppointmentEdited(appointment: Appointment): Promise<void> {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
+    const appointmentLink = `${frontendUrl}/appointment/${appointment.uniqueToken}`;
+
+    // Mapear status a texto en español
+    const statusMap = {
+      pending: 'Pendiente de confirmación',
+      confirmed: 'Confirmada',
+      completed: 'Completada',
+      cancelled: 'Cancelada',
+    };
+
+    const templateData = {
+      patientName: appointment.patientName,
+      specialtyName: appointment.specialty.name,
+      specialistName: `${appointment.specialist.firstName} ${appointment.specialist.lastName}`,
+      appointmentDate: this.formatDate(appointment.appointmentDate),
+      appointmentTime: appointment.appointmentTime,
+      price: appointment.price,
+      status: statusMap[appointment.status] || appointment.status,
+      appointmentLink,
+    };
+
+    const jobData: EmailJobData = {
+      appointmentId: appointment.id,
+      recipientEmail: appointment.patientEmail,
+      subject: '⚠️ Cambios en tu cita - Fisioterapia',
+      templateName: 'appointment-edited',
+      templateData,
+    };
+
+    await this.emailQueue.add('send-email', jobData, {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 2000,
+      },
+    });
+
+    this.logger.log(
+      `Email de cambio de cita encolado para appointment ${appointment.id}`,
+    );
+  }
+
+  /**
    * Enviar email usando template
    */
   async sendEmail(jobData: EmailJobData): Promise<void> {

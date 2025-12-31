@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { ConfirmAppointmentDto } from './dto/confirm-appointment.dto';
 import { Appointment, AppointmentStatus } from './entities/appointment.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -129,6 +130,21 @@ export class AppointmentsController {
   @ApiResponse({ status: 200, description: 'Cita encontrada', type: Appointment })
   async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Appointment> {
     return await this.appointmentsService.findOne(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Editar cita (admin)' })
+  @ApiResponse({ status: 200, description: 'Cita actualizada', type: Appointment })
+  @ApiResponse({ status: 400, description: 'No se puede editar cita completada o cancelada' })
+  @ApiResponse({ status: 404, description: 'Cita/Especialidad/Especialista no encontrado' })
+  @ApiResponse({ status: 409, description: 'Horario no disponible' })
+  async updateAppointment(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: UpdateAppointmentDto,
+  ): Promise<Appointment> {
+    return await this.appointmentsService.updateAppointment(id, updateDto);
   }
 
   @Patch(':id/confirm')

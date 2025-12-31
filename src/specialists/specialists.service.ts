@@ -66,6 +66,41 @@ export class SpecialistsService {
     await this.specialistRepository.remove(specialist);
   }
 
+  // Photo management
+  async updatePhoto(id: string, filename: string): Promise<Specialist> {
+    const specialist = await this.findOne(id);
+
+    // Eliminar foto antigua si existe
+    if (specialist.photoUrl) {
+      await this.deletePhotoFile(specialist.photoUrl);
+    }
+
+    specialist.photoUrl = `/uploads/specialists/${filename}`;
+    return await this.specialistRepository.save(specialist);
+  }
+
+  async deletePhoto(id: string): Promise<void> {
+    const specialist = await this.findOne(id);
+
+    if (specialist.photoUrl) {
+      await this.deletePhotoFile(specialist.photoUrl);
+      specialist.photoUrl = null;
+      await this.specialistRepository.save(specialist);
+    }
+  }
+
+  private async deletePhotoFile(photoUrl: string): Promise<void> {
+    const fs = require('fs').promises;
+    const path = require('path');
+    const filePath = path.join(process.cwd(), photoUrl);
+
+    try {
+      await fs.unlink(filePath);
+    } catch (error) {
+      // Archivo ya no existe o no se puede eliminar, ignorar
+    }
+  }
+
   // Availability management
   async addAvailability(
     specialistId: string,

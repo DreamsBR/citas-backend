@@ -8,8 +8,13 @@ import {
   Delete,
   ParseUUIDPipe,
   Query,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiConsumes } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { SpecialistsService } from './specialists.service';
 import { CreateSpecialistDto } from './dto/create-specialist.dto';
 import { UpdateSpecialistDto } from './dto/update-specialist.dto';
@@ -17,6 +22,15 @@ import { CreateAvailabilityDto } from './dto/create-availability.dto';
 import { UpdateAvailabilityDto } from './dto/update-availability.dto';
 import { Specialist } from './entities/specialist.entity';
 import { Availability } from './entities/availability.entity';
+
+// Configuración de Multer para upload de fotos
+const storage = diskStorage({
+  destination: './uploads/specialists',
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, `specialist-${uniqueSuffix}${extname(file.originalname)}`);
+  },
+});
 
 @ApiTags('specialists')
 @Controller('specialists')
@@ -66,6 +80,27 @@ export class SpecialistsController {
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<{ message: string }> {
     await this.specialistsService.remove(id);
     return { message: 'Especialista eliminado exitosamente' };
+  }
+
+  // Photo endpoints
+  @Post(':id/photo')
+  @ApiOperation({ summary: 'Subir foto de especialista' })
+  @ApiConsumes('multipart/form-data')
+  @ApiResponse({ status: 200, description: 'Foto subida exitosamente', type: Specialist })
+  @UseInterceptors(FileInterceptor('photo', { storage }))
+  async uploadPhoto(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<Specialist> {
+    return await this.specialistsService.updatePhoto(id, file.filename);
+  }
+
+  @Delete(':id/photo')
+  @ApiOperation({ summary: 'Eliminar foto de especialista' })
+  @ApiResponse({ status: 200, description: 'Foto eliminada exitosamente' })
+  async deletePhoto(@Param('id', ParseUUIDPipe) id: string): Promise<{ message: string }> {
+    await this.specialistsService.deletePhoto(id);
+    return { message: 'Foto eliminada exitosamente' };
   }
 
   // Availability endpoints
