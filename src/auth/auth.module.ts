@@ -15,12 +15,14 @@ import { Admin } from '../admin/entities/admin.entity';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService): JwtModuleOptions => ({
-        secret: configService.get<string>('JWT_SECRET') || 'default-secret-key',
-        signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRATION') || '24h',
-        },
-      }),
+      useFactory: (configService: ConfigService): JwtModuleOptions => {
+        return {
+          secret: configService.get<string>('JWT_SECRET') || 'default-secret-key',
+          signOptions: {
+            expiresIn: (configService.get('JWT_EXPIRATION') || '24h') as any,
+          },
+        };
+      },
     }),
   ],
   controllers: [AuthController],
