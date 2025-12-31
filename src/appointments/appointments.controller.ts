@@ -163,4 +163,16 @@ export class AppointmentsController {
       admin.id,
     );
   }
+
+  @Patch(':id/complete')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Marcar cita como completada (admin)' })
+  @ApiResponse({ status: 200, description: 'Cita marcada como completada', type: Appointment })
+  @ApiResponse({ status: 400, description: 'La cita ya está completada o está cancelada' })
+  async completeAppointment(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<Appointment> {
+    return await this.appointmentsService.completeAppointment(id);
+  }
 }

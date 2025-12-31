@@ -427,6 +427,26 @@ export class AppointmentsService {
   }
 
   /**
+   * Marcar cita como completada (admin)
+   */
+  async completeAppointment(id: string): Promise<Appointment> {
+    const appointment = await this.findOne(id);
+
+    if (appointment.status === AppointmentStatus.COMPLETED) {
+      throw new BadRequestException('La cita ya está completada');
+    }
+
+    if (appointment.status === AppointmentStatus.CANCELLED) {
+      throw new BadRequestException('No se puede completar una cita cancelada');
+    }
+
+    appointment.status = AppointmentStatus.COMPLETED;
+    await this.appointmentRepository.save(appointment);
+
+    return await this.findOne(id);
+  }
+
+  /**
    * Cancelar cita (público - con token)
    */
   async cancelByToken(token: string): Promise<Appointment> {
