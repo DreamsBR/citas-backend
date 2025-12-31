@@ -41,7 +41,11 @@ export class AppointmentsController {
     @Query('specialistId', ParseUUIDPipe) specialistId: string,
     @Query('date') date: string,
   ): Promise<{ slots: string[] }> {
-    const dateObj = new Date(date);
+    // Parsear fecha sin conversión UTC
+    // date viene como "2025-12-31"
+    const [year, month, day] = date.split('-').map(Number);
+    const dateObj = new Date(year, month - 1, day);
+
     const slots = await this.appointmentsService.getAvailableSlots(
       specialistId,
       dateObj,
@@ -105,9 +109,16 @@ export class AppointmentsController {
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ): Promise<Appointment[]> {
+    // Parsear fechas sin conversión UTC
+    const [yearStart, monthStart, dayStart] = startDate.split('-').map(Number);
+    const [yearEnd, monthEnd, dayEnd] = endDate.split('-').map(Number);
+
+    const startDateObj = new Date(yearStart, monthStart - 1, dayStart);
+    const endDateObj = new Date(yearEnd, monthEnd - 1, dayEnd, 23, 59, 59);
+
     return await this.appointmentsService.findByDateRange(
-      new Date(startDate),
-      new Date(endDate),
+      startDateObj,
+      endDateObj,
     );
   }
 

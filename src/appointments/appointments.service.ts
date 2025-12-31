@@ -136,7 +136,11 @@ export class AppointmentsService {
     }
 
     // Validar que la fecha/hora esté disponible
-    const date = new Date(appointmentDate);
+    // Parsear fecha sin conversión UTC (importante para Perú UTC-5)
+    const dateStr = typeof appointmentDate === 'string' ? appointmentDate.split('T')[0] : appointmentDate;
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+
     const availableSlots = await this.getAvailableSlots(specialistId, date);
 
     if (!availableSlots.includes(appointmentTime)) {
