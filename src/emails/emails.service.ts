@@ -177,13 +177,24 @@ export class EmailsService {
   /**
    * Formatear fecha para mostrar en emails
    */
-  private formatDate(date: Date): string {
+  private formatDate(date: Date | string): string {
+    // Si es string, parsear correctamente sin conversión de zona horaria
+    let dateObj: Date;
+
+    if (typeof date === 'string') {
+      const dateStr = date.split('T')[0]; // "2025-12-31"
+      const [year, month, day] = dateStr.split('-').map(Number);
+      dateObj = new Date(year, month - 1, day);
+    } else {
+      dateObj = date;
+    }
+
     return new Intl.DateTimeFormat('es-ES', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-    }).format(new Date(date));
+    }).format(dateObj);
   }
 
   /**
