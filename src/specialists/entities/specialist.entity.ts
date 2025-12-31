@@ -45,7 +45,7 @@ export class Specialist {
 
   @ApiProperty({ example: '/uploads/specialists/photo.jpg', description: 'URL de la foto del especialista', required: false })
   @Column({ type: 'varchar', length: 255, nullable: true })
-  photoUrl: string;
+  photoUrl: string | null;
 
   @ApiProperty({ example: 2500.00, description: 'Salario mensual del especialista', required: false })
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })

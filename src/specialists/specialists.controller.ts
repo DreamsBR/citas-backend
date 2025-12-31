@@ -14,6 +14,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import type { Multer } from 'multer';
 import { extname } from 'path';
 import { SpecialistsService } from './specialists.service';
 import { CreateSpecialistDto } from './dto/create-specialist.dto';
@@ -35,7 +36,7 @@ const storage = diskStorage({
 @ApiTags('specialists')
 @Controller('specialists')
 export class SpecialistsController {
-  constructor(private readonly specialistsService: SpecialistsService) {}
+  constructor(private readonly specialistsService: SpecialistsService) { }
 
   // Specialists endpoints
   @Post()
@@ -90,7 +91,7 @@ export class SpecialistsController {
   @UseInterceptors(FileInterceptor('photo', { storage }))
   async uploadPhoto(
     @Param('id', ParseUUIDPipe) id: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: Multer.File,
   ): Promise<Specialist> {
     return await this.specialistsService.updatePhoto(id, file.filename);
   }
