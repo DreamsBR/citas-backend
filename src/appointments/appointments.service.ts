@@ -5,7 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, In } from 'typeorm';
 import { Appointment, AppointmentStatus } from './entities/appointment.entity';
 import { Specialist } from '../specialists/entities/specialist.entity';
 import { Availability } from '../specialists/entities/availability.entity';
@@ -75,11 +75,17 @@ export class AppointmentsService {
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
+    // Obtener citas activas (pending, confirmed, completed)
+    // NO incluir cancelled porque esos slots están disponibles
     const existingAppointments = await this.appointmentRepository.find({
       where: {
         specialistId,
         appointmentDate: Between(startOfDay, endOfDay),
-        status: Between(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED),
+        status: In([
+          AppointmentStatus.PENDING,
+          AppointmentStatus.CONFIRMED,
+          AppointmentStatus.COMPLETED,
+        ]),
       },
     });
 
@@ -142,6 +148,30 @@ export class AppointmentsService {
     if (hour < 8 || hour > 21) {
       throw new BadRequestException(
         'Horario fuera del rango permitido (8am-9pm)',
+      );
+    }
+
+    // VALIDACIÓN FINAL: Double-check justo antes de guardar
+    // Previene race condition si dos usuarios reservan simultáneamente
+    const conflictingAppointment = await this.appointmentRepository.findOne({
+      where: {
+        specialistId,
+        appointmentDate: Between(
+          new Date(date.setHours(0, 0, 0, 0)),
+          new Date(date.setHours(23, 59, 59, 999)),
+        ),
+        appointmentTime,
+        status: In([
+          AppointmentStatus.PENDING,
+          AppointmentStatus.CONFIRMED,
+          AppointmentStatus.COMPLETED,
+        ]),
+      },
+    });
+
+    if (conflictingAppointment) {
+      throw new ConflictException(
+        'Este horario acaba de ser reservado. Por favor, selecciona otro horario.',
       );
     }
 
