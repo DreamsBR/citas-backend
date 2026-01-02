@@ -126,7 +126,7 @@ curl -X POST http://localhost:3001/auth/register \
   }'
 ```
 
-### Login
+### Login UP
 
 ```bash
 curl -X POST http://localhost:3001/auth/login \
