@@ -29,7 +29,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_DATABASE || 'fisioterapia_db',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: process.env.NODE_ENV === 'development', // Solo en desarrollo
+      synchronize: process.env.NODE_ENV === 'development' || process.env.DB_SYNCHRONIZE === 'true', // En desarrollo o si se fuerza explícitamente
       logging: process.env.NODE_ENV === 'development',
     }),
 
@@ -53,4 +53,4 @@ import { WebhooksModule } from './webhooks/webhooks.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
