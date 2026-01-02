@@ -39,6 +39,9 @@ COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
 # Copy email templates
 COPY --chown=nestjs:nodejs src/emails/templates ./dist/emails/templates
 
+# Create uploads directory and set permissions
+RUN mkdir -p ./uploads && chown -R nestjs:nodejs ./uploads
+
 # Switch to non-root user
 USER nestjs
 
