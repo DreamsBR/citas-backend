@@ -83,6 +83,7 @@ services:
       - "${PORT:-3001}:3001"
     networks:
       - fisioterapia-network
+      - dokploy-network
     depends_on:
       postgres:
         condition: service_healthy
@@ -104,3 +105,5 @@ volumes:
 networks:
   fisioterapia-network:
     driver: bridge
+  dokploy-network:
+    external: true
